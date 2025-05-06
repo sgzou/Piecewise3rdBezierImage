@@ -1,0 +1,12 @@
+\contentsline {section}{\numberline {1}Bezier functions}{2}{}%
+\contentsline {section}{\numberline {2}The idea of an approximate solution using Bezier functions}{2}{}%
+\contentsline {subsection}{\numberline {2.1}Example : $\ddot {X}(t) = 2 t^5$}{2}{}%
+\contentsline {subsection}{\numberline {2.2}$\mathcal {C}^1$ piecewise 3rd Bezier function}{3}{}%
+\contentsline {subsection}{\numberline {2.3}Multi-variable function cases}{5}{}%
+\contentsline {section}{\numberline {3}Pseudocode for optimizing control point state}{6}{}%
+\contentsline {section}{\numberline {4}Numerical test}{7}{}%
+\contentsline {subsection}{\numberline {4.1}Lorenz system}{7}{}%
+\contentsline {subsection}{\numberline {4.2}O'Hara knot energy}{8}{}%
+\contentsline {subsubsection}{\numberline {4.2.1}O'Hara knot energy integral}{8}{}%
+\contentsline {subsubsection}{\numberline {4.2.2}Gradient of O'Hara knot energy integral for control points}{10}{}%
+\contentsline {subsection}{\numberline {4.3}Wave equation}{12}{}%
