@@ -8,6 +8,7 @@ The main improvements here are the consideration of the piecewise 3rd Bezier fun
 See the [document](/doc/Piecewise_3rd_Bezier_Image_approximation_method.pdf) for detail mathematical idea.
 
 ## Usage
+
 1. Include "OptimizeOperation.h" and inherit the OptimizeOperation class, then override two methods EquationResidual() and GradientEquationResidual()
 ```c++
 #include "../OptimizeOperation.h"
@@ -18,6 +19,10 @@ class SystemCalculator : public OptimizeOperation
       double EquationResidual(BezierImage img, std::vector<int> samples) override { ... }
       coordinate GradientEquationResidual(BezierImage img, int cpt, std::vector<int> samples) override { ... }
 ```
+Note, the `BezierImage` class function `BezierMap(t)` always takes a parameter `t` of type `std::array<double, 4>`.
+If the parameter is one-dimensional, we will just use the first index of this array, and the same applies to higher dimensions.
+Therefore, the maximum dimension of the domain space is 4.
+
 2. Create a inintial Bezer function
 ```c++
 BezierImage initImg;
