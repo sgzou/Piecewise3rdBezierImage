@@ -11,22 +11,22 @@ class SystemCalculator : public OptimizeOperation
         /*  ==============================================
             The residual of Bezier approximate solution for the equation
             ==============================================  */
-        double EquationResidual(BezierImage obj, std::vector<int> samples) override
+        double EquationResidual(BezierImage img, std::vector<int> samples) override
         {
             double loss = 0.0;
-            double timeGap = (obj.DomainInterval[0][1]-obj.DomainInterval[0][0])/(double)samples[0];
+            double timeGap = (img.DomainInterval[0][1]-img.DomainInterval[0][0])/(double)samples[0];
             std::array<double, 4> ts = {{0.0, 0.0, 0.0, 0.0}};
 
             coordinate v;
             coordinate v0;
             coordinate v00;
             
-            ts[0] = obj.DomainInterval[0][0];
+            ts[0] = img.DomainInterval[0][0];
             for (int i = 0; i < samples[0]+1; i++)
             {
-                v = obj.BezierMap(ts);
-                v0 = obj.DiffBezierMap(ts,0);
-                v00 = obj.DoubleDiffBezierMap(ts,0,0);
+                v = img.BezierMap(ts);
+                v0 = img.DiffBezierMap(ts,0);
+                v00 = img.DoubleDiffBezierMap(ts,0,0);
 
                 loss = loss + pow(0.1*v00.coord[0] + 2.0*v0.coord[0] + exp(v.coord[0]),2);
 
@@ -44,10 +44,10 @@ class SystemCalculator : public OptimizeOperation
         /*  ==============================================
             The gradient of the residual of Bezier approximate solution for the equation
             ==============================================  */
-        coordinate GradientEquationResidual(BezierImage obj, int cpt, std::vector<int> samples) override
+        coordinate GradientEquationResidual(BezierImage img, int cpt, std::vector<int> samples) override
         {
             coordinate result;
-            double timeGap = (obj.DomainInterval[0][1]-obj.DomainInterval[0][0])/(double)samples[0];
+            double timeGap = (img.DomainInterval[0][1]-img.DomainInterval[0][0])/(double)samples[0];
             double cptFactorOfDiffBezier;
             double cptFactorOfDiffBezier0;
 
@@ -57,28 +57,29 @@ class SystemCalculator : public OptimizeOperation
             coordinate v0;
             coordinate v00;
 
-            for (int i = 0; i < obj.TargetDimeion; i++)
+            result.coord.reserve(img.TargetDimension);
+            for (int i = 0; i < img.TargetDimension; i++)
             {
                 result.coord.push_back(0.0);
             }
 
-            ts[0] = obj.DomainInterval[0][0];
+            ts[0] = img.DomainInterval[0][0];
             for (int i = 0; i < samples[0]+1; i++)
             {
-                v = obj.BezierMap(ts);
-                v0 = obj.DiffBezierMap(ts,0);
-                v00 = obj.DoubleDiffBezierMap(ts,0,0);
+                v = img.BezierMap(ts);
+                v0 = img.DiffBezierMap(ts,0);
+                v00 = img.DoubleDiffBezierMap(ts,0,0);
 
-                result.coord[0] = result.coord[0] + 2.0*(0.1*v00.coord[0] + 2.0*v0.coord[0] + exp(v.coord[0]))*(0.1*obj.CPtFactorOfDoubleDiffBezierMap(cpt, ts, 0 ,0) + 2.0*obj.CPtFactorOfDiffBezierMap(cpt, ts, 0) + exp(v.coord[0])*obj.CPtFactorOfBezierMap(cpt, ts));
+                result.coord[0] = result.coord[0] + 2.0*(0.1*v00.coord[0] + 2.0*v0.coord[0] + exp(v.coord[0]))*(0.1*img.CPtFactorOfDoubleDiffBezierMap(cpt, ts, 0 ,0) + 2.0*img.CPtFactorOfDiffBezierMap(cpt, ts, 0) + exp(v.coord[0])*img.CPtFactorOfBezierMap(cpt, ts));
 
                 if (i==0 || i== samples[0])
                 {
-                    result.coord[0] = result.coord[0] + 200000.0*(v.coord[0])*obj.CPtFactorOfBezierMap(cpt, ts);
+                    result.coord[0] = result.coord[0] + 200000.0*(v.coord[0])*img.CPtFactorOfBezierMap(cpt, ts);
                 }
                 ts[0] = ts[0] + timeGap;
             }            
 
-            for (int k = 0; k < obj.TargetDimeion; k++)
+            for (int k = 0; k < img.TargetDimension; k++)
             {
                 result.coord[k] = result.coord[k]*timeGap;
             }
@@ -96,13 +97,12 @@ int main(int argc, char * argv[])
 {    
     std::vector<int> samples = {360};
     
-    BezierImage obj;
-    double correctionFactor = 1.0;
-    obj.ReadFile("data/layer_param.txt");
+    BezierImage initImg;
+    initImg.ReadFile("data/layer_param.txt");
 
     SystemCalculator calculator;
 
-    BezierImage optimizedResult = calculator.ConjugateGradientOptimization(obj, samples, 0.2);
+    BezierImage optimizedResult = calculator.ConjugateGradientOptimization(initImg, samples, 0.2);
     double residual = calculator.EquationResidual(optimizedResult, samples);
 
     std::filesystem::create_directory("data");

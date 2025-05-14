@@ -21,7 +21,8 @@ class SystemCalculator : public OptimizeOperation
             double tangentLength[samples[0]+1];
             double arcLengthFrom0[samples[0]+1];
 
-            for (int k = 0; k < img.TargetDimeion; k++)
+            v.coord.reserve(img.TargetDimension);
+            for (int k = 0; k < img.TargetDimension; k++)
             {
                 v.coord.push_back(0.0);
             }
@@ -96,15 +97,17 @@ class SystemCalculator : public OptimizeOperation
             coordinate arcLengthDerivative;
             double OHaraEnergyElement = 0.0;
             
-
-            for (int k = 0; k < img.TargetDimeion; k++)
+            v.coord.reserve(img.TargetDimension);
+            result.coord.reserve(img.TargetDimension);
+            arcLengthDerivative.coord.reserve(img.TargetDimension);
+            for (int k = 0; k < img.TargetDimension; k++)
             {
                 v.coord.push_back(0.0);
                 result.coord.push_back(0.0);
                 arcLengthDerivative.coord.push_back(0.0);
             }
 
-            if (cpt == 0 || cpt == img.CtrlPtsTotalNum-1)
+            if (cpt == 0 || cpt == img.ControlPointsTotalNumber-1)
             {
                 return result;
             }
@@ -117,7 +120,7 @@ class SystemCalculator : public OptimizeOperation
                 if (i==0) // record arc length from 0 to t1
                 {
                     arcLengthFrom0[i] = vLength[i]*stepGap;
-                    for (int j = 0; j < img.TargetDimeion; j++)
+                    for (int j = 0; j < img.TargetDimension; j++)
                     {
                         arcLengthFrom0Derivative[i].coord.push_back( v.coord[j]*img.CPtFactorOfDiffBezierMap(cpt,t1,0)*stepGap / vLength[i] );
                     }
@@ -125,7 +128,7 @@ class SystemCalculator : public OptimizeOperation
                 else
                 {
                     arcLengthFrom0[i] = arcLengthFrom0[i-1] + vLength[i]*stepGap;
-                    for (int j = 0; j < img.TargetDimeion; j++)
+                    for (int j = 0; j < img.TargetDimension; j++)
                     {
                         arcLengthFrom0Derivative[i].coord.push_back( arcLengthFrom0Derivative[i-1].coord[j] + v.coord[j]*img.CPtFactorOfDiffBezierMap(cpt,t1,0)*stepGap / vLength[i] );
                     }
@@ -153,7 +156,7 @@ class SystemCalculator : public OptimizeOperation
                         if ( abs(arcLengthFrom0[i]-arcLengthFrom0[j]) < arcLengthFrom0[samples[0]]-abs(arcLengthFrom0[i]-arcLengthFrom0[j]) )
                         {
                             arcLength = abs(arcLengthFrom0[i]-arcLengthFrom0[j]);
-                            for (int c = 0; c < img.TargetDimeion; c++)
+                            for (int c = 0; c < img.TargetDimension; c++)
                             {
                                 arcLengthDerivative.coord[c] = copysign(1.0, arcLengthFrom0[i]-arcLengthFrom0[j]) * (arcLengthFrom0Derivative[i].coord[c] - arcLengthFrom0Derivative[j].coord[c]);
                             }
@@ -161,7 +164,7 @@ class SystemCalculator : public OptimizeOperation
                         else
                         {
                             arcLength = arcLengthFrom0[samples[0]]-abs(arcLengthFrom0[i]-arcLengthFrom0[j]);
-                            for (int c = 0; c < img.TargetDimeion; c++)
+                            for (int c = 0; c < img.TargetDimension; c++)
                             {
                                 arcLengthDerivative.coord[c] = arcLengthFrom0Derivative[samples[0]].coord[c] - copysign(1.0, arcLengthFrom0[i]-arcLengthFrom0[j])*(arcLengthFrom0Derivative[i].coord[c] - arcLengthFrom0Derivative[j].coord[c]);
                             }
@@ -201,7 +204,7 @@ class SystemCalculator : public OptimizeOperation
                 t2[0] = img.DomainInterval[0][0];
             }
 
-            for (int k = 0; k < img.TargetDimeion; k++)
+            for (int k = 0; k < img.TargetDimension; k++)
             {
                 result.coord[k] = result.coord[k] * stepGap * stepGap;
             }
@@ -234,14 +237,13 @@ int main(int argc, char * argv[])
     std::vector<std::array<double,2>> interval;
     interval.push_back(intvl);
     
-    BezierImage curve;
-    double correctionFactor = 1.0;
-    //curve.ReadFile("data/-1.64737_param.txt");
-    curve.RandGenerator(cPtsN, fixPts, interval);
+    BezierImage initImg;
+    //initImg.ReadFile("data/1.81877_param.txt");
+    initImg.RandGenerator(cPtsN, fixPts, interval);
 
     SystemCalculator calculator;
 
-    BezierImage optimizedResult = calculator.ConjugateGradientOptimizationRescaled(curve, samples, 90.0);
+    BezierImage optimizedResult = calculator.ConjugateGradientOptimization(initImg, samples, 40.0, 1.0E-5, true, 1.0E-6, true, true ,1.0);
     double residual = calculator.EquationResidual(optimizedResult, samples);
 
     std::filesystem::create_directory("data");

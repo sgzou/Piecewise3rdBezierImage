@@ -1,5 +1,5 @@
 \contentsline {section}{\numberline {1}Bezier functions}{2}{}%
-\contentsline {section}{\numberline {2}The idea of an approximate solution using Bezier functions}{2}{}%
+\contentsline {section}{\numberline {2}The idea of an approximate solution using piecewise Bezier functions}{2}{}%
 \contentsline {subsection}{\numberline {2.1}Example : $\ddot {X}(t) = 2 t^5$}{2}{}%
 \contentsline {subsection}{\numberline {2.2}$\mathcal {C}^1$ piecewise 3rd Bezier function}{3}{}%
 \contentsline {subsection}{\numberline {2.3}Multi-variable function cases}{5}{}%

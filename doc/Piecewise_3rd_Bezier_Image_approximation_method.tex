@@ -62,7 +62,7 @@
 
 \begin{abstract}
 	This is an algorithm for finding the numerical solution of the general (2nd order) integro-differential equation by the piecewise polynomial (3rd Bezier) functions.
-	The main improvements here are the consideration of the piecewise 3rd Bezier functions with $\mathcal{C}^1$ continuity and the use of the conjugate gradient method to find the approximate solution of integro-differential equations.
+	The main improvements here are the consideration of the piecewise 3rd Bezier functions with $\mathcal{C}^1$ continuity and the use of the conjugate gradient method for Bezier control points to find the approximate solution of integro-differential equations.
 \end{abstract}
 
 
@@ -108,14 +108,14 @@ A \textbf{piecewise 3rd Bezier function} can be written as
 \end{align*}
 %
 It is a series of Bezier functions joined end to end, and the last point of one curve coincides with the starting point of the next piece.
-
+There are many papers disscusing how to solve the integro-differential equation using Bezier functions, but few papers disscusing how to deal with these problem by the piecewise Bezier functions.\cite{Lewis:2023}-\cite{Razvarz:2018}
 
 
 
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{The idea of an approximate solution using Bezier functions}
+\section{The idea of an approximate solution using piecewise Bezier functions}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -142,7 +142,7 @@ Suppose an approximate solution X(t) is written as a 3rd order Bezier polynomial
 	X(t) \;=\; & P_{0} \left( \frac{t_{e}-t}{t_{e}-t_{e}} \right)^3 + 3 P_{1} \left( \frac{t_{e}-t}{t_{e}-t_{e}} \right)^2 \left( \frac{t-t_{s}}{t_{e}-t_{s}} \right) + 3 P_{2} \left( \frac{t_{e}-t}{t_{e}-t_{e}} \right) \left( \frac{t-t_{s}}{t_{e}-t_{s}} \right)^2 + P_{3} \left( \frac{t-t_{s}}{t_{e}-t_{s}} \right)^3
 \end{align*}
 %
-Substitute the function back into the equation, the problem now becomes an algebraic problem
+Substitute the Bezier function back into the differential equation, the problem now becomes an algebraic problem
 %
 \begin{align*}
 	\ddot{X}(t) \;=\; & \left( 6P_0 - 12P_1 + 6P_2 \right) + \left( -6P_0 + 18P_1 - 18P_2 + 6P_3 \right) t \;\approx\; 2 t^5 \quad \textrm{for $t\in[0,1]$} \\
@@ -159,11 +159,11 @@ where $\lambda_1,\lambda_2$ are two large numerical constants.
 The residual $R(P_i)$ is a non-negative function, the minimal condition of this function can give an approximate solution of the differential equation system.
 
 
-\textbf{To find the minimal condition of the residual function is an optimized problem}, one can use the gradient descent method, that we can use the gradient $\frac{\partial R(P_i)}{\partial P_i}$ to find the direction of the minimal point.
+\textbf{Finding the minimal condition of the residual function is an optimized problem}, one can use the gradient descent method for Bezier control points, that we can use the gradient $\frac{\partial R(P_i)}{\partial P_i}$ to find the direction of the minimal point.
 Here, we use the \textbf{conjugate gradient method}, that is more efficient in most cases of numerical computation.\cite{Shewchuk:1994}
 
 
-Note, $\frac{\partial R(P_i)}{\partial P_2}$ can be estimated in this way:
+For example, $\frac{\partial R(P_i)}{\partial P_2}$ can be estimated in this way:
 %
 \begin{align*}
 	\frac{\partial R(P_i)}{\partial P_2} & \;=\; \lim_{P'_2\to P_2} \frac{1}{P'_2 - P_2}\left[ \int \left( \ddot{X'}(t)-2t^5 \right)^2 dt - \int \left( \ddot{X}(t)-2t^5 \right)^2 dt \right]  \\
@@ -180,15 +180,15 @@ Note, $\frac{\partial R(P_i)}{\partial P_2}$ can be estimated in this way:
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-Piecewise polynomial function approximation is needed for more complex problems.
+Piecewise polynomial function approximation is essential for handling more complex problems with varying behaviors across different regions.
 
-The piecewise 3rd Bezier functions is 
+The piecewise 3rd Bezier functions are 
 %
 \begin{footnotesize}
 	\begin{align*}
 		X(t) = \left\{ \begin{array}{c l}
 			P_{0} \left( \frac{t_{0e}-t}{t_{0e}-t_{0s}} \right)^3 + 3 P_{1} \left( \frac{t_{0e}-t}{t_{0e}-t_{0s}} \right)^2 \left( \frac{t-t_{0s}}{t_{0e}-t_{0s}} \right) + 3 P_{2} \left( \frac{t_{0e}-t}{t_{0e}-t_{0s}} \right) \left( \frac{t-t_{0s}}{t_{0e}-t_{0s}} \right)^2 + P_{3} \left( \frac{t-t_{0s}}{t_{0e}-t_{0s}} \right)^3 &, \; t\in [t_{0s}, t_{0e}) \\
-			P_{3} \left( \frac{t_{1e}-t}{t_{1e}-t_{1s}} \right)^3 + 3 P_{4} \left( \frac{t_{1e}-t}{t_{1e}-t_{1s}} \right)^2 \left( \frac{t-t_{1s}}{t_{1e}-t_{1s}} \right) + 3 P_{5} \left( \frac{t_{1e}-t}{t_{1e}-t_{1s}} \right) \left( \frac{t-t_{0s}}{t_{1e}-t_{1s}} \right)^2 + P_{6} \left( \frac{t-t_{1s}}{t_{1e}-t_{1s}} \right)^3 &, \; t\in [t_{1s}, t_{1e}) \\
+			P_{3} \left( \frac{t_{1e}-t}{t_{1e}-t_{1s}} \right)^3 + 3 P_{4} \left( \frac{t_{1e}-t}{t_{1e}-t_{1s}} \right)^2 \left( \frac{t-t_{1s}}{t_{1e}-t_{1s}} \right) + 3 P_{5} \left( \frac{t_{1e}-t}{t_{1e}-t_{1s}} \right) \left( \frac{t-t_{1s}}{t_{1e}-t_{1s}} \right)^2 + P_{6} \left( \frac{t-t_{1s}}{t_{1e}-t_{1s}} \right)^3 &, \; t\in [t_{1s}, t_{1e}) \\
 			\qquad \vdots \\
 			P_{3k} \left( \frac{t_{ke}-t}{t_{ke}-t_{ks}} \right)^3 + 3 P_{3k+1} \left( \frac{t_{ke}-t}{t_{ke}-t_{ks}} \right)^2 \left( \frac{t-t_{ks}}{t_{ke}-t_{ks}} \right) + 3 P_{3k+2} \left( \frac{t_{ke}-t}{t_{ke}-t_{ks}} \right) \left( \frac{t-t_{ks}}{t_{ke}-t_{ks}} \right)^2 + P_{3k+3} \left( \frac{t-t_{ks}}{t_{ke}-t_{ks}} \right)^3 &, \; t\in [t_{ks}, t_{ke}] \\
 		\end{array} \right.
@@ -196,11 +196,11 @@ The piecewise 3rd Bezier functions is
 \end{footnotesize}
 %
 where $t_{ks}=t_{(k-1)e}$.
-If we consider all the control points $P_1,P_2,\dots, P_{3k+3}$ are all independent and use the gradient $\frac{\partial R(P_i)}{\partial P_i}$ to find the minimal condition.
+If we consider all the control points $P_1,P_2,\dots, P_{3k+3}$ as independent and use the gradient $\frac{\partial R(P_i)}{\partial P_i}$ to find the minimal condition.
 In most cases, we will get the wrong answer and most of them have non-differentiable points in the joined points $P_3, P_6, \dots, P_{3k}$.
 
 
-So, we imply $C^1$ conditions $\lim_{\epsilon\to 0}\frac{d X(t+\epsilon)}{dt} |_{t=t_{i\,e}} = \lim_{\epsilon\to 0}\frac{d X(t-\epsilon)}{dt} |_{t=t_{i\,e}}$, and it implies
+So, we apply $C^1$ conditions $\lim_{\epsilon\to 0}\frac{d X(t+\epsilon)}{dt} |_{t=t_{i\,e}} = \lim_{\epsilon\to 0}\frac{d X(t-\epsilon)}{dt} |_{t=t_{i\,e}}$, and it implies
 %
 \begin{align}
 	P_{3i+1} \;=\; 2P_{3i} - P_{3i-1}
@@ -210,10 +210,10 @@ So, the real independent control points are $P_0,P_1,P_2,P_3,P_5,P_6,P_8,P_9,\do
 
 
 We can directly apply the relation $P_{3i+1} = 2P_{3i} - P_{3i-1}$, and say $\frac{d R}{d P_{3i-1}} = \int \frac{\partial R(X)}{\partial X(t)} \frac{\partial X}{\partial P_{3i+1}} \frac{\partial P_{3i+1}}{\partial P_{3i-1}} dt + \frac{\partial R}{\partial P_{3i-1}} = - \int \frac{\partial R(X)}{\partial X(t)} \frac{\partial X}{\partial P_{3i+1}} dt + \frac{\partial R}{\partial P_{3i-1}}$.
-But the convergence usually is bad.
+However, this approach typically results in poor convergence.
 This is because $P_{3i-1}$ and $P_{3i}$ both modify $P_{3i+1}$, so part of their effects are reduced.
 \textbf{The better linked action in the calculation:}
-In the iteration viewpoint, a better situation is that, $P_{3i-1}$ involves $P_{3i}$, and later $P_{3i}$ involves $P_{3i+1}$.
+From an iterative perspective, a better situation is that, $P_{3i-1}$ influences $P_{3i}$, and later $P_{3i}$ influences $P_{3i+1}$.
 So, all of them can be modified sequentially.
 To realize the relation and to reflect the differentiable continuity, we consider the differential of $P_{3i-1}$ with the correction from $P_{3i}$:
 %
@@ -222,12 +222,12 @@ To realize the relation and to reflect the differentiable continuity, we conside
 	& \;=\; \int \frac{\partial R(X)}{\partial X(t)} \left( \frac{t-t_{is}}{t_{ie}-t_{is}} \right)^3 \frac{1}{2} dt + \frac{\partial R}{\partial P_{3i-1}}
 \end{align*}
 %
-This means that the variation of $P_{3i-1}$ also involves $P_{3i}$ but not changes other control points.
+This means that the variation of $P_{3i-1}$ also influences $P_{3i}$ but does not affect other control points.
 See the following sub-figure (b).
 So, when we vary $P_{3i-1}$, we also need to modify $P_{3i}$ with the differentiable continuity condition.
 There are no problem for $P_{3i}$ and $P_{3i+1}$, we can use the original formula: $\frac{d R}{d P_{3i}} \;=\; 2\int \frac{\partial R(X)}{\partial X(t)}\frac{\partial X}{\partial P_{3i+1}} dt + \frac{\partial R}{\partial P_{3i}}$.
 See the following sub-figure (c).
-We don't change $P_{3i+1}$ directly, but use $P_{3i+1} = 2P_{3i} - P_{3i-1}$ to elemeliminate all the $P_{3i+1}$ ($i\ge 1$) control points.
+We don't change $P_{3i+1}$ directly, but use $P_{3i+1} = 2P_{3i} - P_{3i-1}$ to eliminate all the $P_{3i+1}$ ($i\ge 1$) control points.
 Now, we can get the gradient vectors $\frac{d R}{d P_j}$ without the $P_{3i+1}$ ($i\ge 1$) control points.
 And using the gradient vectors, we can sequentially modify the control points $P_{i}$ (without $P_{3i+1}$ ($i\ge 1$)) and preserve the differentiable continuity condition.
 %
@@ -293,13 +293,13 @@ So, in multi-variable case, we need use $P_{(3i+1)...}$ and go back to modify $P
 	\caption{Finding the control point state of the minimal residual by the conjugate gradient method.}
 	\begin{algorithmic}[1]
 		\Require 
-		(a). The arbitrary piecewise 3rd Bezier function $X(t)=\sum P_i B_i(t)$. \qquad\qquad  (b). The system residual $R(X,\dot{X},\ddot{X})$ and the gradient $\frac{\partial R(X)}{\partial X(t)}\frac{\partial X}{\partial P_i}$.
+		(a). The arbitrary piecewise 3rd Bezier function $X(t)=\sum P_i B_i(t)$. \qquad\qquad  (b). The system residual $R(X,\dot{X},\ddot{X})$ and the gradient $\frac{\partial R(X)}{\partial X(t)}\frac{\partial X}{\partial P_i} + \dots$.
 		\Ensure
 		The minimized residual $R$ value and the associated control point state $\{P_i\}$. \vspace{2mm}
 		\Repeat
-			\State compute the residual $r=R(\{P_i\})$;
-        	\State estimate the gradient $\frac{\partial R}{\partial P_i}$ for all $P_i$;	\Comment{by the proposal of \S 2.2}
-			\State use conjugate gradient to get all deformation vectors $\Delta P_i$;
+			\State estimate the residual $r=R(\{P_i\})$;
+        	\State compute the gradient $\frac{\partial R}{\partial P_i}$ for all $P_i$;	\Comment{by the proposal of \S 2.2}
+			\State use conjugate gradient to get all deformation vectors $\{\Delta P_i\}$;
 			\While{$r$ can be minimized as $r'$}
 				\State \texttt{SmoothDeform($s \{\Delta P_i\}$)};		\Comment{by the proposal of \S 2.2}
 				\State new residual $r'=R(\{P_i + s \Delta P_i\})$;		\Comment{$s$ is deformation scale}
@@ -343,14 +343,34 @@ find the soliton wave configuration.
 \end{align*}
 %
 The initial data and parameters here are $x(0)=10,y(0)=10,z(0)=10$ and $\sigma=10,\rho=28,\beta=8/3$.
-If we directly write down the residual function for this 3 dimension 1 variable differential system as $R = \int \left\{ (\dot{x}-\sigma(y-x))^2 + (\dot{y}-x(\rho-z)+y)^2 + (\dot{z}-xy+\beta z)^2 \right\} dt + 10000((x(0)-10)^2+(y(0)-10)^2+(z(0)-10)^2)$.
+If we directly write down the residual function for this 3 dimension 1 variable differential system as $R = \int \left\{ (\dot{x}-\sigma(y-x))^2 + (\dot{y}-x(\rho-z)+y)^2 + (\dot{z}-xy+\beta z)^2 \right\} dt + 10^5((x(0)-10)^2+(y(0)-10)^2+(z(0)-10)^2)$.
 We can get the approximate solution in the short time interval $t\in [0,0.2]$.
-But the longer time interval cases are not easy to converge.
+Note that the longer time interval cases are not easy to converge.
 
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=1.0\linewidth]{../lorenz_system/data/lorenz_system_ex.png}
 	\caption{Here, the time interval is $t\in [0,0.2]$ and the number of control points is 37}
+\end{figure}
+
+The difficulty of the convergence is due to the next time setp depends on the previous time setp data.
+(It also corresponds on the coefficient of the initial condition, too large or too small.)
+To improve the problem, we rewrite the integral of the residual such that previous time setp with large weight.
+For example
+%
+\begin{align*}
+	R \;=\; & \int \left\{ \exp(-2\frac{t-t_{\rm start}}{t_{\rm end}-t_{\rm start}}) \left( \frac{dx}{dt} - \sigma(y-x) \right)^2 + \exp(-2\frac{t-t_{\rm start}}{t_{\rm end}-t_{\rm start}}) \left( \frac{dy}{dt} - x(\rho-z) + y \right)^2 \right.\\
+	& \left. + \exp(-2\frac{t-t_{\rm start}}{t_{\rm end}-t_{\rm start}}) \left( \frac{dz}{dt} - xy + \beta z \right)^2 \right\} dt
+\end{align*}
+%
+And run the program from small domain region, for example $[0,0.2]$.
+Then use the result and extend the domain region, for example $[0,0.3]$, and extend it again.
+Finially, we can get a long time evolution result.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{../lorenz_system/data/lorenz_system_ex2.png}
+	\caption{Here, the time interval is $t\in [0,0.3]$ and the number of control points is 46}
 \end{figure}
 
 
@@ -378,8 +398,7 @@ The O'Hara knot energy formula is
 \end{align*}
 %
 where $D(\gamma (u),\gamma (v))$ is the shortest arc distance between $\gamma (u)$ and $\gamma (v)$ on the curve. 
-(So $D(\gamma (u),\gamma (v)) = |\int_u^v |\dot{\gamma}(t)|dt|$.
-If $\gamma$ is a circle with total length $L$, then $D(\gamma (u),\gamma (v)) = \min\{ |\int_u^v |\dot{\gamma}(t)|dt|,\, L - |\int_u^v |\dot{\gamma}(t)|dt| \}$ )
+( If $\gamma$ is a circle with total length $L$, then $D(\gamma (u),\gamma (v)) = \min\{ |\int_u^v |\dot{\gamma}(t)|dt|,\, L - |\int_u^v |\dot{\gamma}(t)|dt| \}$ )
 
 
 Here, we want to use our algorithm to find the minimal energy of a isotopic knot.
@@ -521,6 +540,8 @@ where we multiply \textsf{copysign(1.0, arcLengthFrom0[i]-arcLengthFrom0[j])} on
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+It is checked that this approach can solve the wave equation $\partial_{tt} u - \partial_{xx} u = 0$ with initial data.
+%
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=1.0\linewidth]{../wave_equation/data/wave_equation_ex.png}

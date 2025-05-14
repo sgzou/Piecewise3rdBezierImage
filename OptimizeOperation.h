@@ -54,234 +54,60 @@ class OptimizeOperation
         /*  ==============================================
             The main optimization process
             ==============================================  */
-        BezierImage ConjugateGradientOptimization(BezierImage bImage, std::vector<int> samples, double goalResidual, bool autoIncreateSamples = true, bool autoPerturbation = true, double minimalValidDeform = 1.0E-4)
+        BezierImage ConjugateGradientOptimization(BezierImage bImage, std::vector<int> samples, double goalResidual, double extraSetAtSmallDeform = 1.0E-5, bool autoPerturbation = true, double pertubationSize = 1.0E-6, bool autoIncreateSamples = true, bool autoRescale = false, double rescaleMaxSize = 1.0)
         {
-
-            double residual = EquationResidual(bImage, samples);
-            double newResidual;
-        
-            double startDeform = 1.0E-15;
-            double realDeformScale;
-            double changeStepDeformScale = minimalValidDeform*0.01;
-            int testStep = 0;
-        
-            std::vector<coordinate> gradient;
-            std::vector<coordinate> previousGradient;
-            double grandientNorm;
-            double previousGrandientNorm = 1.0E+300;
-            double conjugateGrandientFactor;
-        
-            coordinate zeroGradient;
-            coordinate gradientFlow;
-        
-            for (int i = 0; i < bImage.TargetDimeion; i++)
-            {
-                zeroGradient.coord.push_back( 0.0 );
-                gradientFlow.coord.push_back( 0.0 );
-            }
-        
-            for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
-            {
-                previousGradient.push_back( zeroGradient );
-            }
-        
-            while (residual > goalResidual)
-            {
-        
-                testStep = testStep + 1;
-                
-                BezierImage deformedObj = BezierImage(bImage);
-                
-                realDeformScale = startDeform;
-                
-                std::cout << "testStep = " << testStep << ", #sample = " << samples[0]  << std::endl;
-        
-                bool isCalculate;
-                std::array<int, 4> index;
-        
-                gradient.clear();
-                for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
-                {
-        
-                    isCalculate = false;
-                    index = bImage.CtrlPtSerialNumtoIndex[cPt];
-                        
-                    for (int i = 0; i < bImage.DomainDimeion; i++)
-                    {
-                        if (index[i] < 3 || index[i]%3 == 0 || index[i]%3 == 2)
-                        {
-                            isCalculate = true;
-                        }
-                    }
-                    if (isCalculate)
-                    {
-                        gradient.push_back( GradientEquationResidual(bImage, cPt, samples) );
-                    }
-                    else
-                    {
-                        gradient.push_back( zeroGradient );
-                    }
-        
-                    printf("\r calculate gradient for control points [%d%%] ",cPt*100/(bImage.CtrlPtsTotalNum-1));
-                }
-        
-                grandientNorm = CtrlPtsTotalLenSquare(gradient);
-        
-                conjugateGrandientFactor = grandientNorm / previousGrandientNorm;
-        
-                for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
-                {
-                    for (int i = 0; i < bImage.TargetDimeion; i++)
-                    {
-                        gradient[cPt].coord[i] = gradient[cPt].coord[i] + conjugateGrandientFactor*previousGradient[cPt].coord[i];
-                    }
-                }
-        
-                while (realDeformScale < 1.0)
-                {
-                    for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
-                    {
-                        for (int i = 0; i < bImage.TargetDimeion; i++)
-                        {
-                            gradientFlow.coord[i] = - realDeformScale*gradient[cPt].coord[i];
-                        }
-                        deformedObj.SmoothDeform(cPt, gradientFlow);
-                    }
-        
-                    newResidual = EquationResidual(deformedObj, samples);
-                    
-                    if (newResidual < residual + 1.0E-8)  // The numerical error margin may allow to continue the calculation.
-                    {
-                        bImage = BezierImage(deformedObj);
-                        residual = newResidual;
-        
-                        if (realDeformScale < changeStepDeformScale)
-                        {
-                            realDeformScale = realDeformScale * 10.0;
-                        }
-                        else
-                        {
-                            realDeformScale = realDeformScale * 1.5;
-                        }
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-        
-                previousGradient = gradient;
-                previousGrandientNorm = grandientNorm;
-        
-                /* If the deformation is not far enough, we perturb the control points and restart the Conjugate Gradient algorithm. */
-                if (realDeformScale < minimalValidDeform || realDeformScale > 1.0)
-                {
-                    if (autoPerturbation == true)
-                    {
-                        coordinate tempDeform;
-                        for (int i = 0; i < bImage.TargetDimeion; i++)
-                        {
-                            tempDeform.coord.push_back(0.0);
-                        }
-            
-                        for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
-                        {
-                            bool isBoundary = false;
-                            for (int d = 0; d < bImage.DomainDimeion; d++)
-                            {
-                                if (bImage.CtrlPtSerialNumtoIndex[cPt][d]==0 || bImage.CtrlPtSerialNumtoIndex[cPt][d] == bImage.CtrlPtsNumInDAxis[d]-1)
-                                {
-                                    isBoundary = true;
-                                }
-                            }
-
-                            if (isBoundary == false)
-                            {
-                                for (int i = 0; i < bImage.TargetDimeion; i++)
-                                {
-                                    tempDeform.coord[i] = 1.0E-6*(static_cast <double> (rand()) / static_cast <double> (RAND_MAX));
-                                    previousGradient[cPt].coord[i] = 0.0;
-                                }
-                                bImage.SmoothDeform(cPt, tempDeform);
-                            }
-                        }
-                    }
-
-                    if (autoIncreateSamples == true)
-                    {
-                        for (int i = 0; i < samples.size(); i++)
-                        {
-                            samples[i] = samples[i] + (int) 2*(static_cast <double> (rand()) / static_cast <double> (RAND_MAX)) + 1;
-                        }
-                    }
-        
-                    previousGrandientNorm = 1.0E+300;
-                    residual = EquationResidual(bImage, samples);
-                }
-        
-                std::cout << ", realDeformScale = " << realDeformScale << ", residual = " << residual << std::endl;
-        
-            }
-
-            return bImage;
-        }
-
-
-        /*  ==============================================
-            The main optimization process with rescale to < maxsize
-            ==============================================  */
-        BezierImage ConjugateGradientOptimizationRescaled(BezierImage bImage, std::vector<int> samples, double goalResidual, bool autoIncreateSamples = true, bool autoPerturbation = true, double minimalValidDeform = 1.0E-4, double maxsize = 1.0)
-        {
+            const int MAX_ITERATIONS = 1000; 
             double maxlength = 0.0;
             double residual = EquationResidual(bImage, samples);
             double newResidual;
         
             double startDeform = 1.0E-15;
             double realDeformScale;
-            double changeStepDeformScale = minimalValidDeform*0.01;
-            int testStep = 0;
+            double changeStepDeformScale = extraSetAtSmallDeform*0.01;
+            int iterationCount = 0;
         
             std::vector<coordinate> gradient;
             std::vector<coordinate> previousGradient;
-            double grandientNorm;
-            double previousGrandientNorm = 1.0E+300;
-            double conjugateGrandientFactor;
+            double gradientNorm;
+            double previousGradientNorm = 1.0E+300;
+            double conjugateGradientFactor;
         
             coordinate zeroGradient;
             coordinate gradientFlow;
         
-            for (int i = 0; i < bImage.TargetDimeion; i++)
+            for (int i = 0; i < bImage.TargetDimension; i++)
             {
                 zeroGradient.coord.push_back( 0.0 );
                 gradientFlow.coord.push_back( 0.0 );
             }
         
-            for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
+            for (int cPt = 0; cPt < bImage.ControlPointsTotalNumber; cPt++)
             {
                 previousGradient.push_back( zeroGradient );
             }
         
-            while (residual > goalResidual)
+            while (residual > goalResidual && iterationCount < MAX_ITERATIONS)
             {
-                testStep = testStep + 1;
+                iterationCount = iterationCount + 1;
                 
                 BezierImage deformedObj = BezierImage(bImage);
                 
                 realDeformScale = startDeform;
                 
-                std::cout << "testStep = " << testStep << ", #sample = " << samples[0]  << std::endl;
+                std::cout << "iterationCount = " << iterationCount << ", #sample = " << samples[0]  << std::endl;
         
                 bool isCalculate;
                 std::array<int, 4> index;
         
                 gradient.clear();
-                for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
+                gradient.reserve(bImage.ControlPointsTotalNumber);
+                for (int cPt = 0; cPt < bImage.ControlPointsTotalNumber; cPt++)
                 {
         
                     isCalculate = false;
-                    index = bImage.CtrlPtSerialNumtoIndex[cPt];
+                    index = bImage.ControlPointSerialNumToIndex[cPt];
                         
-                    for (int i = 0; i < bImage.DomainDimeion; i++)
+                    for (int i = 0; i < bImage.DomainDimension; i++)
                     {
                         if (index[i] < 3 || index[i]%3 == 0 || index[i]%3 == 2)
                         {
@@ -297,26 +123,26 @@ class OptimizeOperation
                         gradient.push_back( zeroGradient );
                     }
         
-                    printf("\r calculate gradient for control points [%d%%] ",cPt*100/(bImage.CtrlPtsTotalNum-1));
+                    printf("\r calculate gradient for control points [%d%%] ",cPt*100/(bImage.ControlPointsTotalNumber-1));
                 }
         
-                grandientNorm = CtrlPtsTotalLenSquare(gradient);
+                gradientNorm = CtrlPtsTotalLenSquare(gradient);
         
-                conjugateGrandientFactor = grandientNorm / previousGrandientNorm;
+                conjugateGradientFactor = gradientNorm / previousGradientNorm;
         
-                for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
+                for (int cPt = 0; cPt < bImage.ControlPointsTotalNumber; cPt++)
                 {
-                    for (int i = 0; i < bImage.TargetDimeion; i++)
+                    for (int i = 0; i < bImage.TargetDimension; i++)
                     {
-                        gradient[cPt].coord[i] = gradient[cPt].coord[i] + conjugateGrandientFactor*previousGradient[cPt].coord[i];
+                        gradient[cPt].coord[i] = gradient[cPt].coord[i] + conjugateGradientFactor*previousGradient[cPt].coord[i];
                     }
                 }
         
                 while (realDeformScale < 1.0)
                 {
-                    for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
+                    for (int cPt = 0; cPt < bImage.ControlPointsTotalNumber; cPt++)
                     {
-                        for (int i = 0; i < bImage.TargetDimeion; i++)
+                        for (int i = 0; i < bImage.TargetDimension; i++)
                         {
                             gradientFlow.coord[i] = - realDeformScale*gradient[cPt].coord[i];
                         }
@@ -325,7 +151,7 @@ class OptimizeOperation
         
                     newResidual = EquationResidual(deformedObj, samples);
                     
-                    if (newResidual < residual + 1.0E-8)  // The numerical error margin may allow to continue the calculation.
+                    if (newResidual < residual + 1.0E-10)  // The numerical error margin may allow to continue the calculation.
                     {
                         bImage = BezierImage(deformedObj);
                         residual = newResidual;
@@ -346,52 +172,56 @@ class OptimizeOperation
                 }
                 
                 previousGradient = gradient;
-                previousGrandientNorm = grandientNorm;
+                previousGradientNorm = gradientNorm;
 
-                maxlength = 0.0;
-                for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
+                if (autoRescale == true)
                 {
-                    for (int i = 0; i < bImage.TargetDimeion; i++)
+                    maxlength = 0.0;
+                    for (int cPt = 0; cPt < bImage.ControlPointsTotalNumber; cPt++)
                     {
-                        if (maxlength < bImage.CtrlPoint[cPt].coord[i])
+                        for (int i = 0; i < bImage.TargetDimension; i++)
                         {
-                            maxlength = bImage.CtrlPoint[cPt].coord[i];
-                        }                        
+                            if (maxlength < bImage.ControlPoints[cPt].coord[i])
+                            {
+                                maxlength = bImage.ControlPoints[cPt].coord[i];
+                            }                        
+                        }
                     }
-                }
 
-                if (maxlength > maxsize)
-                {
-                    double ratio = maxsize / maxlength;
-                    previousGrandientNorm = previousGrandientNorm * ratio;
-
-                    for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
+                    if (maxlength > rescaleMaxSize)
                     {
-                        for (int i = 0; i < bImage.TargetDimeion; i++)
+                        double ratio = rescaleMaxSize / maxlength;
+                        previousGradientNorm = previousGradientNorm * ratio;
+
+                        for (int cPt = 0; cPt < bImage.ControlPointsTotalNumber; cPt++)
                         {
-                            previousGradient[cPt].coord[i] = previousGradient[cPt].coord[i] * ratio;
-                            bImage.CtrlPoint[cPt].coord[i] = bImage.CtrlPoint[cPt].coord[i] * ratio;
+                            for (int i = 0; i < bImage.TargetDimension; i++)
+                            {
+                                previousGradient[cPt].coord[i] = previousGradient[cPt].coord[i] * ratio;
+                                bImage.ControlPoints[cPt].coord[i] = bImage.ControlPoints[cPt].coord[i] * ratio;
+                            }
                         }
                     }
                 }
 
-                /* If the deformation is not far enough, we perturb the control points and restart the Conjugate Gradient algorithm. */
-                if (realDeformScale < minimalValidDeform || realDeformScale > 1.0)
+                /* If the deformation of Conjugate Gradient method can not change enough, we perturb the control points and restart the Conjugate Gradient algorithm. */
+                if (realDeformScale < extraSetAtSmallDeform || realDeformScale > 1.0)
                 {
                     if (autoPerturbation == true)
                     {
                         coordinate tempDeform;
-                        for (int i = 0; i < bImage.TargetDimeion; i++)
+                        tempDeform.coord.reserve(bImage.TargetDimension);
+                        for (int i = 0; i < bImage.TargetDimension; i++)
                         {
                             tempDeform.coord.push_back(0.0);
                         }
             
-                        for (int cPt = 0; cPt < bImage.CtrlPtsTotalNum; cPt++)
+                        for (int cPt = 0; cPt < bImage.ControlPointsTotalNumber; cPt++)
                         {
                             bool isBoundary = false;
-                            for (int d = 0; d < bImage.DomainDimeion; d++)
+                            for (int d = 0; d < bImage.DomainDimension; d++)
                             {
-                                if (bImage.CtrlPtSerialNumtoIndex[cPt][d]==0 || bImage.CtrlPtSerialNumtoIndex[cPt][d] == bImage.CtrlPtsNumInDAxis[d]-1)
+                                if (bImage.ControlPointSerialNumToIndex[cPt][d]==0 || bImage.ControlPointSerialNumToIndex[cPt][d] == bImage.ControlPointsNumberInDomainAxis[d]-1)
                                 {
                                     isBoundary = true;
                                 }
@@ -399,9 +229,9 @@ class OptimizeOperation
 
                             if (isBoundary == false)
                             {
-                                for (int i = 0; i < bImage.TargetDimeion; i++)
+                                for (int i = 0; i < bImage.TargetDimension; i++)
                                 {
-                                    tempDeform.coord[i] = 1.0E-6*(static_cast <double> (rand()) / static_cast <double> (RAND_MAX));
+                                    tempDeform.coord[i] = pertubationSize*(static_cast <double> (rand()) / static_cast <double> (RAND_MAX));
                                     previousGradient[cPt].coord[i] = 0.0;
                                 }
                                 bImage.SmoothDeform(cPt, tempDeform);
@@ -413,16 +243,19 @@ class OptimizeOperation
                     {
                         for (int i = 0; i < samples.size(); i++)
                         {
-                            samples[i] = samples[i] + (int) 2*(static_cast <double> (rand()) / static_cast <double> (RAND_MAX)) + 1;
+                            samples[i] = samples[i] + 1;
                         }
                     }
         
-                    previousGrandientNorm = 1.0E+300;
+                    previousGradientNorm = 1.0E+300;
                     residual = EquationResidual(bImage, samples);
                 }
         
                 std::cout << ", realDeformScale = " << realDeformScale << ", residual = " << residual << std::endl;
-        
+
+                if (iterationCount >= MAX_ITERATIONS) {  
+                    std::cout << "Warning: Reached maximum iterations without convergence." << std::endl;
+                }
             }
 
             return bImage;

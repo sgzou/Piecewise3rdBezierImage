@@ -11,7 +11,7 @@ class SystemCalculator : public OptimizeOperation
         /*  ==============================================
             The residual of Bezier approximate solution for the equation
             ==============================================  */    
-        double EquationResidual(BezierImage obj, std::vector<int> samples) override
+        double EquationResidual(BezierImage img, std::vector<int> samples) override
         {
             double energy = 0.0;
             double stepGap = 1.0/samples[0];
@@ -22,28 +22,29 @@ class SystemCalculator : public OptimizeOperation
 
             double temp = 0.0;
 
-            for (int k = 0; k < obj.TargetDimeion; k++)
+            v.coord.reserve(img.TargetDimension);
+            for (int k = 0; k < img.TargetDimension; k++)
             {
                 v.coord.push_back(0.0);
             }
 
-            t1[0] = obj.DomainInterval[0][0];
+            t1[0] = img.DomainInterval[0][0];
             for (int i = 0; i < samples[0]+1; i++)
             {
-                v = obj.DiffBezierMap(t1,0);
+                v = img.DiffBezierMap(t1,0);
                 vLength[i] = sqrt(VectorLenSquare(v.coord));  // |γ'(t1)|
                 t1[0] = t1[0] + stepGap;
             }
 
-            t1[0] = obj.DomainInterval[0][0];
-            t2[0] = obj.DomainInterval[0][0];
+            t1[0] = img.DomainInterval[0][0];
+            t2[0] = img.DomainInterval[0][0];
             for (int i = 0; i < samples[0]+1; i++)
             {
                 for (int j = 0; j < samples[0]+1; j++)
                 {
                     if (i != j & !( i==0 & j == samples[0]) & !( i==samples[0] & j == 0))
                     {   
-                        temp = obj.DistanceSquare(t1,t2);  // |γ(t1)-γ(t2)|^2
+                        temp = img.DistanceSquare(t1,t2);  // |γ(t1)-γ(t2)|^2
                         if (isnan(temp) | temp < 1.0E-80)
                         {
                             std::cout << " distance square too small: " << temp << std::endl;
@@ -57,13 +58,13 @@ class SystemCalculator : public OptimizeOperation
 
                     if ((i==0 & j==samples[0]) || (j ==0 && i==samples[0]))
                     {
-                        energy = energy + 1.0E+20*obj.DistanceSquare(t1,t2);
+                        energy = energy + 1.0E+20*img.DistanceSquare(t1,t2);
                     }
 
                     t2[0] = t2[0] + stepGap;
                 }
                 t1[0] = t1[0] + stepGap;
-                t2[0] = obj.DomainInterval[0][0];
+                t2[0] = img.DomainInterval[0][0];
             }
             return energy * stepGap * stepGap;
         }
@@ -72,7 +73,7 @@ class SystemCalculator : public OptimizeOperation
         /*  ==============================================
             The gradient of the residual of Bezier approximate solution for the equation
             ==============================================  */
-        coordinate GradientEquationResidual(BezierImage obj, int cpt, std::vector<int> samples) override
+        coordinate GradientEquationResidual(BezierImage img, int cpt, std::vector<int> samples) override
         {
             coordinate result;
             double energy = 0.0;
@@ -94,43 +95,44 @@ class SystemCalculator : public OptimizeOperation
             double arcDistance = 0.0;
             double OHaraEnergySimple = 0.0;
             
-
-            for (int k = 0; k < obj.TargetDimeion; k++)
+            v.coord.reserve(img.TargetDimension);
+            result.coord.reserve(img.TargetDimension);
+            for (int k = 0; k < img.TargetDimension; k++)
             {
                 v.coord.push_back(0.0);
                 result.coord.push_back(0.0);
             }
 
-            if (cpt == 0 || cpt == obj.CtrlPtsTotalNum-1)
+            if (cpt == 0 || cpt == img.ControlPointsTotalNumber-1)
             {
                 return result;
             }
 
-            t1[0] = obj.DomainInterval[0][0];
+            t1[0] = img.DomainInterval[0][0];
             for (int i = 0; i < samples[0]+1; i++)
             {
-                v = obj.DiffBezierMap(t1,0);
+                v = img.DiffBezierMap(t1,0);
                 vLength[i] = sqrt(VectorLenSquare(v.coord));  // |γ'(t1)|
                 t1[0] = t1[0] + stepGap;
             }
 
-            t1[0] = obj.DomainInterval[0][0];
-            t2[0] = obj.DomainInterval[0][0];
+            t1[0] = img.DomainInterval[0][0];
+            t2[0] = img.DomainInterval[0][0];
             for (int i = 0; i < samples[0]+1; i++)
             {
                 for (int j = 0; j < samples[0]+1; j++)
                 {
                     if (i != j & !( i==0 & j == samples[0]) & !( i==samples[0] & j == 0))
                     {
-                        bmapt1 = obj.BezierMap(t1);
-                        bmapt2 = obj.BezierMap(t2);
-                        bmapDifft1 = obj.DiffBezierMap(t1,0);
-                        bmapDifft2 = obj.DiffBezierMap(t2,0);
-                        bmapCptDiffFactort1 = obj.CPtFactorOfDiffBezierMap(cpt,t1,0);
-                        bmapCptDiffFactort2 = obj.CPtFactorOfDiffBezierMap(cpt,t2,0);
-                        disCptFactor = obj.CPtFactorOfBezierMap(cpt,t1) - obj.CPtFactorOfBezierMap(cpt,t2);
+                        bmapt1 = img.BezierMap(t1);
+                        bmapt2 = img.BezierMap(t2);
+                        bmapDifft1 = img.DiffBezierMap(t1,0);
+                        bmapDifft2 = img.DiffBezierMap(t2,0);
+                        bmapCptDiffFactort1 = img.CPtFactorOfDiffBezierMap(cpt,t1,0);
+                        bmapCptDiffFactort2 = img.CPtFactorOfDiffBezierMap(cpt,t2,0);
+                        disCptFactor = img.CPtFactorOfBezierMap(cpt,t1) - img.CPtFactorOfBezierMap(cpt,t2);
 
-                        distanceSquare = obj.DistanceSquare(t1,t2);
+                        distanceSquare = img.DistanceSquare(t1,t2);
                         OHaraEnergySimple =  (1.0/distanceSquare); // the second term integral int int 1/arcLength^2 |γ'(t1)||γ'(t2)| dt1 dt2 = const. + int 1/arcLength |γ'(t1)| dt1 = const. + c. ln ( arcLength(t1,t2) ) is independent on γ
                         
                         result.coord[0] = result.coord[0] - ( ( 2.0/pow(distanceSquare,2) ) * ( bmapt1.coord[0] - bmapt2.coord[0] ) * disCptFactor ) * vLength[i] * vLength[j] 
@@ -149,9 +151,9 @@ class SystemCalculator : public OptimizeOperation
 
                     if ((i==0 & j==samples[0]) || (j ==0 && i==samples[0]))
                     {
-                        bmapt1 = obj.BezierMap(t1);
-                        bmapt2 = obj.BezierMap(t2);
-                        bmapCptDiffFactort1 = (obj.CPtFactorOfBezierMap(cpt,t1) - obj.CPtFactorOfBezierMap(cpt,t2));
+                        bmapt1 = img.BezierMap(t1);
+                        bmapt2 = img.BezierMap(t2);
+                        bmapCptDiffFactort1 = (img.CPtFactorOfBezierMap(cpt,t1) - img.CPtFactorOfBezierMap(cpt,t2));
 
                         result.coord[0] = result.coord[0] + 2.0E+20*(bmapt1.coord[0] - bmapt2.coord[0])*bmapCptDiffFactort1;
                         result.coord[1] = result.coord[1] + 2.0E+20*(bmapt1.coord[1] - bmapt2.coord[1])*bmapCptDiffFactort1;
@@ -161,10 +163,10 @@ class SystemCalculator : public OptimizeOperation
                     t2[0] = t2[0] + stepGap;
                 }
                 t1[0] = t1[0] + stepGap;
-                t2[0] = obj.DomainInterval[0][0];
+                t2[0] = img.DomainInterval[0][0];
             }
 
-            for (int k = 0; k < obj.TargetDimeion; k++)
+            for (int k = 0; k < img.TargetDimension; k++)
             {
                 result.coord[k] = result.coord[k] * stepGap * stepGap;
             }
@@ -197,14 +199,13 @@ int main(int argc, char * argv[])
     std::vector<std::array<double,2>> interval;
     interval.push_back(intvl);
     
-    BezierImage obj;
-    double correctionFactor = 1.0;
-    //obj.ReadFile("data/9.11058_param.txt");
-    obj.RandGenerator(cPtsN, fixPts, interval);
+    BezierImage initImg;
+    //initImg.ReadFile("data/9.11058_param.txt");
+    initImg.RandGenerator(cPtsN, fixPts, interval);
 
     SystemCalculator calculator;
 
-    BezierImage optimizedResult = calculator.ConjugateGradientOptimizationRescaled(obj, samples, 5.0);
+    BezierImage optimizedResult = calculator.ConjugateGradientOptimization(initImg, samples, 5.0, 1.E-5, true, 1.0E-6, true, true, 1.0);
     double residual = calculator.EquationResidual(optimizedResult, samples);
 
     std::filesystem::create_directory("data");
